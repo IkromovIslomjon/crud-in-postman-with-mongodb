@@ -1,83 +1,31 @@
 const express=require('express');
 const app=express();
-
+const mongoose=require('mongoose');
 app.use(express.json());
+mongoose.connect('mongodb://localhost/virtualdars').then(()=>{
+    console.log('Mongodbga ulandi...');
+}).catch((err)=>{
+    console.log('error occured in mongodb',err);
+    
+})
+const categorySchema=new mongoose.Schema({
+    name:{
+        type:String,
+        required:true,
+        minlength:3,
+        maxlength:15
+    }
+});
+const Category=new  mongoose.model("category",categorySchema);
 
-// const books=[
-//     {id:1, name:'rich dad and poor dad'},
-//     {id:2, name:'the war of art'},
-//     {id:2, name:'rework'}
-// ];
-
-// app.get('/', (req,res)=>{
-//     res.send('Salom');
-// })
-
-// app.post('/api/books', (req,res)=>{
-//     if(!req.body.name){
-//         res.status(400).send('Name is required');
-//         return ;
-//     }
-//     if(req.body.name.length<3){
-//         res.status(400).send('The name should be at least 3 characters long');
-//         return;
-//     }
-//    const book={
-//     id:books.length+1,
-//     name:req.body.name
-//    };
-//    books.push(book);
-//    res.status(201).send(book);
-// });
-
-
-// app.put('/api/books/:id', (req,res)=>{
-//     const book=books.find(b=>b.id===parseInt(req.params.id));
-// if(!book){
-//     res.status(404).send('Invalid book id');
-//     return;
-// }
-// if(!req.body.name){
-//     res.status(400).send('Name is required');
-//     return ;
-// }
-// if(req.body.name.length<3){
-//     res.status(400).send('The name should be at least 3 characters long');
-//     return;
-// }
-//  book.name=req.body.name;
-//  res.send(book);
-// });
-
-// app.get('/api/books',(req,res)=>{
-//     res.send(books);
-// })
-
-// app.delete('/api/books/:id', (req,res)=>{
-//     const book=books.find(b=>b.id===parseInt(req.params.id));
-//     if(!book){
-//         return res.status(404).send('Invalid book id');
-//     }
-//     const bookIndex=books.indexOf(book);
-//     books.splice(bookIndex,1);
-//     res.send(book);
-// });
-
-
-
-const categories=[
-    {id:1, name:'nodeJs'},
-    {id:2, name:'Java'},
-    {id:3, name:'Php'},
-    {id:4, name:'Python'}
-];
-
-app.get('/virtualdars.com/api/categories', (req,res)=>{
+app.get('/virtualdars.com/api/categories', async (req,res)=>{
+    const categories= await Category.find().sort('name')
     res.send(categories);
 });
 
-app.put('/virtualdars.com/api/categories/:id', (req,res)=>{
-    const category=categories.find(c=>c.id===parseInt(req.params.id));
+app.put('/virtualdars.com/api/categories/:id', async (req,res)=>{
+    const category=await Category.findByIdAndUpdate(req.params.id, {name:req.body.name});
+
     if(!category){
         return res.status(404).send('Invalid id');
     }
@@ -87,32 +35,37 @@ app.put('/virtualdars.com/api/categories/:id', (req,res)=>{
     if(!req.body.name){
         return res.status(400).send('The name of the category is required');
     }
-    category.name=req.body.name;
     res.send(category);
 });
 
-app.post('/virtualdars.com/api/categories', (req,res)=>{
+app.post('/virtualdars.com/api/categories', async (req,res)=>{
     if(!req.body.name){
         return res.status(400).send('The name of the category is required');
     }
     if(req.body.name<3){
         return  res.status(400).send('The name of the category shouldl be at least 3 characters')
       }
-      const category={
-        id:categories.length+1,
+      const category= new Category({
         name:req.body.name
-      };
-      categories.push(category);
-      res.send(category);
-});
+      })
+      await category.save();
+      res.status(201).send(category);
 
-app.delete('/virtualdars.com/api/categories/:id', (req,res)=>{
-    const category=categories.find(c=>c.id===parseInt(req.params.id));
+      
+});
+app.get('/virtualdars.com/api/categories/:id', async (req,res)=>{
+    let category= await Category.findById(req.params.id);
+    if(!category){
+        res.status(404).send('Invalid id')
+    }
+    res.send(category);
+})
+
+app.delete('/virtualdars.com/api/categories/:id', async (req,res)=>{
+    const category=await Category.findbAndDelete(req.params.id);
     if(!category){
         return res.status(404).send('Invalid id');
     }
-    const categoryIndex=categories.indexOf(category);
-    categories.splice(categoryIndex,1);
     res.send(category);
 })
 
